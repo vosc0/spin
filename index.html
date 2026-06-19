@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate Decision Wheel</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    background:linear-gradient(135deg,#0f172a,#1e293b,#111827);
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container{
+    max-width:1200px;
+    width:100%;
+    display:flex;
+    gap:40px;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+}
+
+.wheel-area{
+    position:relative;
+}
+
+.pointer{
+    position:absolute;
+    top:-15px;
+    left:50%;
+    transform:translateX(-50%);
+    width:0;
+    height:0;
+    border-left:20px solid transparent;
+    border-right:20px solid transparent;
+    border-top:40px solid #facc15;
+    z-index:10;
+    filter:drop-shadow(0 0 10px gold);
+}
+
+canvas{
+    border-radius:50%;
+    box-shadow:
+        0 0 50px rgba(255,255,255,.1),
+        inset 0 0 50px rgba(255,255,255,.1);
+}
+
+.controls{
+    width:350px;
+    background:rgba(255,255,255,.08);
+    backdrop-filter:blur(15px);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:20px;
+    padding:25px;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+textarea{
+    width:100%;
+    height:220px;
+    border:none;
+    outline:none;
+    border-radius:12px;
+    padding:12px;
+    resize:none;
+    font-size:15px;
+}
+
+button{
+    width:100%;
+    margin-top:12px;
+    border:none;
+    padding:14px;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:bold;
+    transition:.3s;
+}
+
+.spin{
+    background:#22c55e;
+    color:white;
+}
+
+.spin:hover{
+    background:#16a34a;
+}
+
+.update{
+    background:#3b82f6;
+    color:white;
+}
+
+.update:hover{
+    background:#2563eb;
+}
+
+.result{
+    margin-top:20px;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+    min-height:40px;
+    color:#facc15;
+}
+
+.credit{
+    text-align:center;
+    margin-top:10px;
+    opacity:.7;
+    font-size:13px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="wheel-area">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="600" height="600"></canvas>
+</div>
+
+<div class="controls">
+    <h1>🎡 Decision Wheel</h1>
+
+    <textarea id="options">
+Pizza
+Burger
+Pasta
+Sushi
+Tacos
+Ice Cream
+    </textarea>
+
+    <button class="update" onclick="updateWheel()">
+        Update Wheel
+    </button>
+
+    <button class="spin" onclick="spinWheel()">
+        Spin Wheel
+    </button>
+
+    <div class="result" id="result">
+        Ready to decide!
+    </div>
+
+    <div class="credit">
+        Enter one option per line.
+    </div>
+</div>
+
+</div>
+
+<script>
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+
+let options = [];
+let currentRotation = 0;
+let spinning = false;
+
+function generateColors(n){
+    const colors = [];
+    for(let i=0;i<n;i++){
+        colors.push(`hsl(${(360/n)*i},85%,55%)`);
+    }
+    return colors;
+}
+
+function drawWheel(){
+
+    const radius = canvas.width/2;
+    const center = radius;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const slice = (Math.PI*2)/options.length;
+    const colors = generateColors(options.length);
+
+    options.forEach((option,i)=>{
+
+        const start = i*slice;
+        const end = start+slice;
+
+        ctx.beginPath();
+        ctx.moveTo(center,center);
+        ctx.arc(center,center,radius,start,end);
+        ctx.closePath();
+
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.save();
+
+        ctx.translate(center,center);
+        ctx.rotate(start+slice/2);
+
+        ctx.fillStyle="white";
+        ctx.font="bold 22px Arial";
+        ctx.textAlign="right";
+
+        ctx.fillText(option,radius-30,10);
+
+        ctx.restore();
+
+    });
+
+    ctx.beginPath();
+    ctx.arc(center,center,50,0,Math.PI*2);
+    ctx.fillStyle="#111827";
+    ctx.fill();
+
+    ctx.strokeStyle="white";
+    ctx.lineWidth=4;
+    ctx.stroke();
+}
+
+function updateWheel(){
+
+    options = document
+        .getElementById("options")
+        .value
+        .split("\n")
+        .map(x=>x.trim())
+        .filter(x=>x);
+
+    if(options.length < 2){
+        alert("Enter at least 2 options.");
+        return;
+    }
+
+    drawWheel();
+}
+
+function spinWheel(){
+
+    if(spinning) return;
+
+    spinning = true;
+
+    const extraRotation =
+        3600 +
+        Math.random()*3600;
+
+    currentRotation += extraRotation;
+
+    canvas.style.transition =
+        "transform 6s cubic-bezier(.17,.67,.18,1)";
+
+    canvas.style.transform =
+        `rotate(${currentRotation}deg)`;
+
+    setTimeout(()=>{
+
+        const normalized =
+            currentRotation % 360;
+
+        const slice =
+            360/options.length;
+
+        const winnerIndex =
+            Math.floor(
+                ((360-normalized)%360) / slice
+            );
+
+        const winner =
+            options[winnerIndex];
+
+        document.getElementById("result")
+            .innerHTML =
+            "🏆 Winner: " + winner;
+
+        spinning = false;
+
+    },6000);
+}
+
+updateWheel();
+</script>
+
+</body>
+</html>
